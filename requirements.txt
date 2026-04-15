@@ -1,0 +1,17 @@
+# requirements.txt
+# Real-time Face & Emotion Detection System
+# Project P2837554 | Ritika Thapa Magar
+
+# Core computer vision
+opencv-python>=4.8.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Testing
+pytest>=7.4.0
+
+# Optional: enhanced face recognition via dlib (install separately if needed)
+# dlib>=19.24.0
+# face-recognition>=1.3.0
