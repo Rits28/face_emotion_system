@@ -1,141 +1,213 @@
-# Real-time Face and Emotion Detection System
-**Project P2837554 | Ritika Thapa Magar | Niels Brock | Feb 2026**
-Supervisor: Bernice Bryan
+# Face and Emotion Detection System
+**Project P2837554 | Ritika Thapa Magar**
+
+A real-time face detection, emotion recognition, and face identification system built with Python, OpenCV, and dlib. Detected emotions are used to recommend YouTube music via an integrated panel.
 
 ---
 
-## Overview
-A lightweight, real-time prototype that detects faces, recognises known individuals,
-and estimates basic emotions — all using classical computer-vision techniques
-(OpenCV + rule-based logic). No internet connection or GPU required.
+## Features
+
+- Real-time face detection via Haar cascades
+- Emotion recognition — Happy, Sad, Angry, Surprised, Neutral
+- Face registration and identification using LBP+HOG features
+- YouTube music recommendations based on detected emotion
+- Screenshot capture (full frame or face crop)
+- Face management — register and delete known faces
 
 ---
 
 ## Project Structure
+
 ```
 face_emotion_system/
-├── src/
-│   ├── main.py                # Entry point — run this file
-│   ├── face_detector.py       # Haar Cascade face detection
-│   ├── emotion_estimator.py   # Rule-based emotion estimation
-│   ├── face_recognizer.py     # LBP histogram face recognition
-│   ├── attendance_logger.py   # SQLite logging + CSV export
-│   └── ui_overlay.py          # On-screen annotations / HUD
-├── database/
-│   └── attendance.db          # Auto-created on first run
 ├── data/
-│   ├── known_faces/           # Add sub-folders here to register faces
-│   └── attendance_export.csv  # Auto-created on session end
+│   └── known_faces/         # Registered face images and feature cache
+├── src/
+│   ├── __init__.py
+│   ├── main.py              # Application entry point
+│   ├── face_detector.py     # Haar cascade face detection
+│   ├── emotion_estimator.py # Emotion classification (dlib or Haar fallback)
+│   ├── face_recognizer.py   # LBP+HOG face identification
+│   ├── ui_overlay.py        # Camera feed overlay drawing
+│   └── youtube_recommender.py  # Emotion-based YouTube panel
 ├── tests/
-│   └── test_system.py         # Unit tests (no webcam needed)
+│   ├── __init__.py
+│   └── test_system.py
+├── shape_predictor_68_face_landmarks.dat  # dlib landmark model (download separately)
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Quick Start
+## Requirements
 
-### 1. Install dependencies
+- Python 3.10 or higher
+- Windows 10/11 (tested), macOS, or Linux
+- Webcam
+
+---
+
+## Installation
+
+### 1. Clone or download the project
+
 ```bash
-pip install -r requirements.txt
+cd Desktop
 ```
 
-### 2. Run the system
+### 2. Install core dependencies
+
 ```bash
+pip install opencv-python numpy pandas Pillow scipy pytest
+```
+
+### 3. Install dlib (optional but recommended)
+
+dlib enables accurate facial landmark-based emotion detection. Without it, the system falls back to Haar cascade emotion estimation.
+
+**Windows:**
+```bash
+pip install dlib
+```
+
+If that fails, install CMake and Visual Studio Build Tools first:
+- Download CMake: https://cmake.org/download/
+- Download Build Tools: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+Then retry:
+```bash
+pip install dlib
+```
+
+**macOS:**
+```bash
+brew install cmake
+pip install dlib
+```
+
+**Linux:**
+```bash
+sudo apt-get install cmake libopenblas-dev liblapack-dev
+pip install dlib
+```
+
+### 4. Download the dlib landmark model
+
+Download `shape_predictor_68_face_landmarks.dat` from:
+https://github.com/davisking/dlib-models
+
+Place the `.dat` file in the **root of the project** (same level as `requirements.txt`):
+
+```
+face_emotion_system/
+└── shape_predictor_68_face_landmarks.dat  ✓
+```
+
+---
+
+## Running the Application
+
+```bash
+cd face_emotion_system
 python src/main.py
 ```
 
-### 3. Keyboard Controls
+---
+
+## How to Use
+
+### Registering a Face
+1. Click **"Register New Face"** in the sidebar
+2. Enter the person's name
+3. Follow the 3-step photo capture — look straight, tilt left, tilt right
+4. Click **"Capture Photo"** for each step
+5. The face is saved and immediately available for recognition
+
+### Deleting a Face
+1. Click **"Delete a Registered Face"**
+2. Select the person from the list
+3. Confirm deletion — all their photos and feature data are removed
+
+### Taking Screenshots
+- Click **"Save Screenshot"** or press **`S`** — saves the full camera frame
+- Press **`Shift+S`** — saves a cropped face-only image
+- Screenshots are saved in the current working directory
+
+### Keyboard Shortcuts
 | Key | Action |
 |-----|--------|
-| `Q` | Quit and export attendance CSV |
 | `S` | Save screenshot |
-| `R` | Register a new face (one face must be visible) |
+| `Shift+S` | Save face crop |
+| `R` | Open register face dialog |
+| `Q` | Quit the application |
+
+### YouTube Recommendations
+The recommendation panel appears automatically when a face is detected. It updates with music suggestions matching the detected emotion after the emotion is held consistently for ~40 frames.
 
 ---
 
-## Registering Known Faces
+## Emotion Detection
 
-**Method A – Automatic (via webcam)**
-1. Run the system.
-2. Position your face in the camera.
-3. Press `R` and type your name when prompted.
+The system uses **dlib 68-point facial landmarks** when available, falling back to Haar cascades otherwise.
 
-**Method B – Manual (pre-load images)**
-1. Create a folder: `data/known_faces/<YourName>/`
-2. Place `.jpg` or `.png` photos of the person inside.
-3. Restart the system — it will load them automatically.
-
-Example:
-```
-data/known_faces/
-    Alice/
-        photo1.jpg
-        photo2.jpg
-    Bob/
-        photo1.jpg
-```
+| Emotion   | Primary Signal |
+|-----------|---------------|
+| Happy     | Mouth width ratio increases (MWR > 0.36) |
+| Surprised | Eyes widen (EAR > 0.28) + brows raise (BROW > 0.16) |
+| Angry     | Brows pulled very low (BROW < 0.11) |
+| Sad       | Eyes drooping (EAR < 0.19) |
+| Neutral   | All values within baseline range |
 
 ---
 
-## How It Works
+## Face Recognition
 
-### Face Detection
-Uses OpenCV's `haarcascade_frontalface_default.xml` — a pre-trained Haar Cascade
-classifier. The grayscale frame is histogram-equalised first to improve detection
-under varied lighting.
+Faces are identified using **LBP (Local Binary Patterns) + HOG (Histogram of Oriented Gradients)** features with chi-squared distance matching.
 
-### Emotion Estimation (Rule-Based)
-Five features are extracted from the face region:
-| Feature | Measurement |
-|---------|------------|
-| Smile score | Haar Cascade smile detection in lower face |
-| Eye openness | Eye bounding-box aspect ratio |
-| Forehead brightness | Mean pixel intensity, upper 20% of face |
-| Edge energy | Laplacian variance in lower face |
-| Gradient magnitude | Sobel gradient mean across whole face |
-
-These are combined via hand-tuned thresholds to classify: **Happy, Sad, Angry, Surprised, Neutral**.
-
-### Face Recognition
-LBP (Local Binary Pattern) histograms + HSV colour histograms are computed for
-each face ROI, then compared against stored features using histogram correlation.
-A threshold of **0.55** (out of 1.0) is used to accept a match.
-
-### Attendance & Data Storage
-- **SQLite3** database (`database/attendance.db`) stores each recognition event
-  with name, emotion, timestamp, date, and session ID.
-- On exit the system exports a **CSV** file (`data/attendance_export.csv`) using
-  Pandas (falls back to the built-in `csv` module if Pandas is unavailable).
+- Register at least 3 photos per person (straight, left tilt, right tilt) for best accuracy
+- Recognition threshold: 13.0 (lower = stricter matching)
+- Identity is confirmed after 3 consistent matches in a 12-frame window
 
 ---
 
-## Running the Tests
+## Troubleshooting
+
+**Camera not opening:**
 ```bash
-pip install pytest
-python -m pytest tests/ -v
+# Try a different camera index in src/main.py
+self.cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 ```
-All tests run without a webcam — they use synthetic image data.
+
+**numpy DLL error on Windows:**
+```bash
+pip uninstall numpy opencv-python -y
+pip cache purge
+pip install numpy
+pip install opencv-python
+```
+
+**Face always shows "Unknown":**
+- Re-register the face in good lighting
+- Make sure your face fills the detection box clearly
+- Check the terminal for recognizer scores — if scores are well above 13.0, the threshold may need adjusting
+
+**Only Happy/Sad detected (no dlib):**
+- Install dlib and download `shape_predictor_68_face_landmarks.dat`
+- Place the `.dat` file in the project root folder
 
 ---
 
-## Known Limitations
-- Detection accuracy depends on lighting quality.
-- Rule-based emotion estimation is approximate and works best with clear,
-  front-facing expressions.
-- Face recognition uses classical features and may confuse people with
-  similar skin tones or hairstyles; for higher accuracy consider integrating
-  `dlib` / `face-recognition` library (see `requirements.txt`).
-- The system is a proof-of-concept prototype, not a production-grade security tool.
+## Running Tests
+
+```bash
+cd face_emotion_system
+pytest tests/
+```
 
 ---
 
-## References
-- OpenCV Documentation: https://docs.opencv.org/
-- Dlib Documentation: http://dlib.net/
-- Python Software Foundation: https://www.python.org/
-- SQLite Documentation: https://www.sqlite.org/
-- Zeng et al. (2018) *IEEE TPAMI* 31(1), pp. 39–58.
-- Mollahosseini et al. (2016) *AffectNet, CVPR*, pp. 4949–4958.
-- Zhang et al. (2016) *IEEE TPAMI* 38(5), pp. 918–930.
+## License
+
+This project was developed for academic purposes.  
+Project P2837554 | Ritika Thapa Magar

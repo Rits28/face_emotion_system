@@ -1,9 +1,3 @@
-"""
-tests/test_system.py
-Unit tests for core modules — no webcam required.
-Run with: python -m pytest tests/ -v
-"""
-
 import sys
 import os
 import numpy as np
@@ -17,9 +11,8 @@ from src.face_recognizer import FaceRecognizer
 from src.attendance_logger import AttendanceLogger
 
 
-# -------------------------------------------------------------------------
+
 # Helpers
-# -------------------------------------------------------------------------
 
 def make_blank_frame(h=480, w=640, c=3):
     """Create a plain grey BGR frame."""
@@ -33,9 +26,9 @@ def make_face_frame():
     return frame
 
 
-# -------------------------------------------------------------------------
+
 # FaceDetector tests
-# -------------------------------------------------------------------------
+
 
 class TestFaceDetector:
     def test_init(self):
@@ -63,9 +56,8 @@ class TestFaceDetector:
             assert isinstance(py, int)
 
 
-# -------------------------------------------------------------------------
+
 # EmotionEstimator tests
-# -------------------------------------------------------------------------
 
 class TestEmotionEstimator:
     EMOTIONS = {"Happy", "Sad", "Angry", "Surprised", "Neutral", "Unknown"}
@@ -121,9 +113,8 @@ class TestEmotionEstimator:
         assert len(color) == 3
 
 
-# -------------------------------------------------------------------------
 # FaceRecognizer tests
-# -------------------------------------------------------------------------
+
 
 class TestFaceRecognizer:
     def test_init(self):
@@ -162,9 +153,7 @@ class TestFaceRecognizer:
         assert score > 0.95  # Same feature → high similarity
 
 
-# -------------------------------------------------------------------------
 # AttendanceLogger tests
-# -------------------------------------------------------------------------
 
 class TestAttendanceLogger:
     def test_init(self, tmp_path):
